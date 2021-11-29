@@ -66,6 +66,17 @@ class Game:
 
         return self.game_over
 
+    def actions(board):
+        """
+        Returns set of all possible actions (i, j) available on the board.
+        """
+        action = set()
+        for i, row in enumerate(board):
+            for j, vall in enumerate(row):
+                if (vall == 0):
+                    action.add((i, j))
+        return action
+
     def get_availables(self):
         return np.where(self.board.flatten() == 0)[0] + 1
 
@@ -91,6 +102,8 @@ class Game:
         print('---+---+---')
         print(f' {A[6]} | {A[7]} | {A[8]}')
     #### Classe de algoritmos para o computador (I.A.)
+
+
 class Computer:
 
     def __init__(self, algorithm='Random'):
@@ -107,14 +120,16 @@ class Computer:
         winner = 0
 
         # verificando se o jogador 1 venceu
-        if any(np.sum(board, axis=0) == 3) or any(np.sum(board, axis=1) == 3) or sum(np.diag(board)) == 3 or sum(np.diag(board[::-1])) == 3:
+        if any(np.sum(board, axis=0) == 3) or any(np.sum(board, axis=1) == 3) or sum(np.diag(board)) == 3 or sum(
+                np.diag(board[::-1])) == 3:
 
             game_over = True
             winner = 1
             score = (len(self.get_availables(board)) + 1)
 
         # verificando se o jogador 2 venceu
-        elif any(np.sum(board, axis=0) == -3) or any(np.sum(board, axis=1) == -3) or sum(np.diag(board)) == -3 or sum(np.diag(board[::-1])) == -3:
+        elif any(np.sum(board, axis=0) == -3) or any(np.sum(board, axis=1) == -3) or sum(np.diag(board)) == -3 or sum(
+                np.diag(board[::-1])) == -3:
 
             game_over = True
             winner = -1
@@ -219,10 +234,60 @@ class Computer:
 
         return v, move
 
-    def alpha_beta(self, board):
+    def alpha_beta(self, board, minimizing=True):
 
-        print('Returning a random choice')
+        if minimizing:
+            print('Minimizando')
+            ply = -1
+            value, move = self.min_alpha_beta_pruning(board, ply, float("-inf"), float("inf"))
+
+        else:
+            print('Maximizando')
+            ply = 1
+            value, move = self.max_alpha_beta_pruning(board, ply, float("-inf"), float("inf"))
         return self.random(board)
+
+    def max_alpha_beta_pruning(self, board, ply, alpha, beta):
+        # Verificando se é um estado terminal
+        global move
+        move = None
+        if self.is_terminal(board)[0]:
+            return self.is_terminal(board)[1], None
+
+        v = -np.inf
+
+        avl = self.get_availables(board)
+        for a in avl:
+            new_board = self.play_move(board, a, ply)
+            v2, _ = self.min_alpha_beta_pruning(new_board, -ply, alpha, beta)
+            if v2 > v:
+                v, move = v2, a
+            beta = min(alpha, v)
+            if v >= beta:
+                return v, move
+
+        return v, move
+
+    def min_alpha_beta_pruning(self, board, ply, alpha, beta):
+        # Verificando se é um estado terminal
+        global move
+        move = None
+        if self.is_terminal(board)[0]:
+            return self.is_terminal(board)[1], None
+
+        v = np.inf
+
+        avl = self.get_availables(board)
+        for a in avl:
+            new_board = self.play_move(board, a, ply)
+            v2, _ = self.max_alpha_beta_pruning(new_board, ply, alpha, beta)
+            if v2 > v:
+                v, move = v2, a
+            alpha = max(alpha, v)
+            if v >= beta:
+                return v, move
+
+        return v, move
 
     def montecarlo(self, board, player=-1, simulations=None):
 
@@ -309,7 +374,7 @@ def main():
     computer = Computer(algorithm='montecarlo')
 
     Carlos = Computer()
-    Moises = Computer(algorithm="MINIMAX")
+    Moises = Computer(algorithm="ALPHA_BETA")
 
     game_over = False
 
